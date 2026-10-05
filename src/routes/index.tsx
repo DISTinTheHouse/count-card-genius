@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { AppShell } from "@/components/AppShell";
 import { PlayingCard } from "@/components/PlayingCard";
+import { Button } from "@/components/ui/button";
 import { usePro } from "@/lib/cards";
 
 export const Route = createFileRoute("/")({
@@ -10,6 +11,8 @@ export const Route = createFileRoute("/")({
       { name: "description", content: "Domina el sistema Hi-Lo para contar cartas con lecciones y práctica en tu móvil." },
       { property: "og:title", content: "CuentaCartas — Aprende a contar cartas" },
       { property: "og:description", content: "Lecciones y práctica del sistema Hi-Lo, gratis y PRO." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
   component: Learn,
@@ -27,9 +30,9 @@ function Learn() {
   const [pro] = usePro();
   return (
     <AppShell>
-      <section className="mt-4 rounded-2xl border bg-card p-5">
-        <p className="text-sm text-muted-foreground">Valores Hi-Lo</p>
-        <div className="mt-3 grid grid-cols-3 gap-3 text-center">
+      <section className="mt-3 rounded-2xl border bg-card p-5 shadow-playing backdrop-blur-sm">
+        <p className="text-center text-[0.68rem] font-bold uppercase text-muted-foreground">Valores Hi-Lo</p>
+        <div className="mt-5 grid grid-cols-3 gap-3 text-center">
           {[
             { c: { rank: "5", suit: "♥" }, v: "+1", l: "2 a 6", cls: "text-success" },
             { c: { rank: "8", suit: "♣" }, v: "0", l: "7 a 9", cls: "text-muted-foreground" },
@@ -37,26 +40,29 @@ function Learn() {
           ].map((x) => (
             <div key={x.v} className="flex flex-col items-center gap-2">
               <PlayingCard card={x.c as never} size="sm" />
-              <span className={`font-display text-3xl ${x.cls}`}>{x.v}</span>
+              <span className={`font-display text-2xl ${x.cls}`}>{x.v}</span>
               <span className="text-xs text-muted-foreground">{x.l}</span>
             </div>
           ))}
         </div>
-        <Link to="/practicar" className="mt-5 block rounded-xl bg-gold py-3 text-center font-semibold text-primary-foreground">Empezar a practicar</Link>
+        <Button asChild variant="gold" size="lg" className="mt-6 w-full">
+          <Link to="/practicar">Empezar a practicar</Link>
+        </Button>
       </section>
 
-      <h2 className="mt-8 font-display text-2xl tracking-wide">Lecciones</h2>
+      <h2 className="mt-7 px-1 font-display text-sm uppercase">Lecciones</h2>
       <ul className="mt-3 space-y-3">
         {lessons.map((l) => {
           const locked = l.pro && !pro;
           return (
-            <li key={l.t} className={`rounded-xl border bg-card p-4 ${locked ? "opacity-70" : ""}`}>
-              <div className="flex items-center justify-between">
-                <h3 className="font-semibold">{l.t}</h3>
-                {l.pro && <span className="rounded-full bg-gold px-2 py-0.5 text-[10px] font-bold text-primary-foreground">PRO</span>}
+            <li key={l.t} className={`rounded-xl border p-4 transition-colors ${locked ? "bg-background/25 opacity-65" : "bg-card hover:bg-accent/60"}`}>
+              <div className="flex items-center gap-3">
+                <span className={`flex size-8 shrink-0 items-center justify-center rounded-full border text-xs font-bold ${locked ? "border-border bg-muted text-muted-foreground" : "border-success/30 bg-success/15 text-success"}`}>{l.t.split(".")[0]}</span>
+                <h3 className="min-w-0 flex-1 font-semibold leading-tight">{l.t.slice(3)}</h3>
+                {l.pro && <span className="rounded-full border border-primary/30 bg-primary/15 px-2 py-0.5 text-[10px] font-bold text-primary">PRO</span>}
               </div>
-              <p className="mt-1 text-sm text-muted-foreground">{locked ? "Desbloquea PRO para ver esta lección." : l.d}</p>
-              {locked && <Link to="/pro" className="mt-2 inline-block text-sm text-primary">Desbloquear →</Link>}
+              <p className="mt-2 pl-11 text-sm leading-relaxed text-muted-foreground">{locked ? "Desbloquea PRO para ver esta lección." : l.d}</p>
+              {locked && <Link to="/pro" className="mt-2 inline-block pl-11 text-xs font-semibold text-primary">Desbloquear →</Link>}
             </li>
           );
         })}
