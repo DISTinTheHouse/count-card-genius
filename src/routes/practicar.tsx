@@ -2,6 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { AppShell } from "@/components/AppShell";
 import { PlayingCard } from "@/components/PlayingCard";
+import { Button } from "@/components/ui/button";
 import { type Card, hiLo, loadStats, saveStats, shoe, usePro, type Stats } from "@/lib/cards";
 
 export const Route = createFileRoute("/practicar")({
@@ -11,6 +12,8 @@ export const Route = createFileRoute("/practicar")({
       { name: "description", content: "Entrena tu cuenta corriente Hi-Lo con cartas reales a tu ritmo." },
       { property: "og:title", content: "Practicar conteo — CuentaCartas" },
       { property: "og:description", content: "Entrena el conteo de cartas Hi-Lo." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
   component: Practice,
@@ -71,12 +74,12 @@ function Practice() {
 
   return (
     <AppShell>
-      <div className="mt-2 flex justify-between text-sm text-muted-foreground">
+      <div className="mt-2 flex justify-between rounded-lg border bg-card px-3 py-2 text-xs font-semibold text-muted-foreground">
         <span>Aciertos: {stats.correct}/{stats.rounds}</span>
         <span>{pro ? "PRO · ilimitado" : `Hoy: ${today}/${FREE_DAILY}`}</span>
       </div>
 
-      <div className="mt-6 flex h-60 items-center justify-center">
+      <div className="mt-4 flex h-60 items-center justify-center rounded-2xl border bg-card/50">
         {phase === "deal" && cards[i] && <PlayingCard key={i} card={cards[i]} />}
         {phase === "idle" && <p className="text-center text-muted-foreground">Memoriza la cuenta mientras salen las cartas.</p>}
         {phase === "answer" && <p className="font-display text-4xl">¿Cuál es la cuenta?</p>}
@@ -93,13 +96,13 @@ function Practice() {
       {phase === "answer" && (
         <div className="mt-4 flex gap-2">
           <input autoFocus inputMode="numeric" value={guess} onChange={(e) => setGuess(e.target.value)} placeholder="Ej: -2" className="flex-1 rounded-xl border bg-input/20 px-4 py-3 text-lg outline-none focus:border-ring" />
-          <button onClick={submit} disabled={guess === ""} className="rounded-xl bg-gold px-6 font-semibold text-primary-foreground disabled:opacity-50">OK</button>
+          <Button onClick={submit} disabled={guess === ""} variant="gold" size="lg" className="h-auto px-6">OK</Button>
         </div>
       )}
 
       {(phase === "idle" || phase === "result") && (
         <>
-          <section className="mt-4 space-y-4 rounded-2xl border bg-card p-4">
+          <section className="mt-4 space-y-5 rounded-xl border bg-card p-4">
             <Setting label="Cartas" value={String(count)} locked={false}>
               <input type="range" min={5} max={pro ? 52 : 15} value={count} onChange={(e) => setCount(+e.target.value)} className="w-full accent-primary" />
             </Setting>
@@ -111,9 +114,9 @@ function Practice() {
             </Setting>
           </section>
           {limited ? (
-            <Link to="/pro" className="mt-4 block rounded-xl bg-gold py-4 text-center font-semibold text-primary-foreground">Límite diario alcanzado · Hazte PRO</Link>
+            <Button asChild variant="gold" size="lg" className="mt-4 w-full"><Link to="/pro">Límite diario alcanzado · Hazte PRO</Link></Button>
           ) : (
-            <button onClick={start} className="mt-4 w-full rounded-xl bg-gold py-4 font-semibold text-primary-foreground">{phase === "result" ? "Otra ronda" : "Repartir"}</button>
+            <Button onClick={start} variant="gold" size="lg" className="mt-4 w-full">{phase === "result" ? "Otra ronda" : "Repartir"}</Button>
           )}
         </>
       )}
@@ -125,7 +128,7 @@ function Setting({ label, value, locked, children }: { label: string; value: str
   return (
     <div>
       <div className="mb-1 flex justify-between text-sm">
-        <span>{label} {locked && <Link to="/pro" className="ml-1 rounded-full bg-gold px-2 py-0.5 text-[10px] font-bold text-primary-foreground">PRO</Link>}</span>
+        <span>{label} {locked && <Link to="/pro" className="ml-1 rounded-full border border-primary/30 bg-primary/15 px-2 py-0.5 text-[10px] font-bold text-primary">PRO</Link>}</span>
         <span className="text-muted-foreground">{value}</span>
       </div>
       <div className={locked ? "opacity-40" : ""}>{children}</div>
