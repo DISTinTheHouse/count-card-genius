@@ -8,3 +8,4 @@
 > Commits you push to the connected branch sync back to Lovable and show up in
 > the editor, so keep the branch in a working state.
 <!-- LOVABLE:END -->
+- Freemium gating lives in src/lib/cards.ts usePro(); currently a localStorage demo flag until real payments replace it.
