@@ -16,7 +16,9 @@ export function shoe(decks: number): Card[] {
     for (const s of SUITS) for (const r of RANKS) out.push({ rank: r, suit: s });
   for (let i = out.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
-    [out[i], out[j]] = [out[j], out[i]];
+    const tmp = out[i]!;
+    out[i] = out[j]!;
+    out[j] = tmp;
   }
   return out;
 }
