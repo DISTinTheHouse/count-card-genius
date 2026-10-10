@@ -3,7 +3,7 @@ import { useSyncExternalStore } from "react";
 // Which global sheet is open. Any component can call openSheet("pro") without
 // prop drilling; AppShell renders the sheets.
 
-export type SheetId = "pro" | "profile" | null;
+export type SheetId = "pro" | "profile" | "bonus" | null;
 
 let current: SheetId = null;
 const listeners = new Set<() => void>();

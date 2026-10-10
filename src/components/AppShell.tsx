@@ -1,18 +1,19 @@
-import { Link } from "@tanstack/react-router";
-import type { ReactNode } from "react";
-import { Crown, GraduationCap, Layers, LogOut } from "lucide-react";
+import { Link, useRouterState } from "@tanstack/react-router";
+import { useEffect, type ReactNode } from "react";
+import { Coins, Crown, GraduationCap, LogOut, Spade } from "lucide-react";
 import { Logo } from "@/components/Logo";
 import { ProPanel } from "@/components/ProPanel";
 import { Sheet } from "@/components/Sheet";
 import { Welcome } from "@/components/Welcome";
 import { Button } from "@/components/ui/button";
 import { usePro, useStats } from "@/lib/cards";
+import { START_CHIPS, fmt, setChips, useChips } from "@/lib/chips";
 import { saveProfile, useProfile, type Profile } from "@/lib/profile";
 import { openSheet, useSheet } from "@/lib/sheets";
 
 const tabs = [
-  { to: "/", label: "Aprender", icon: GraduationCap },
-  { to: "/practicar", label: "Practicar", icon: Layers },
+  { to: "/", label: "Entrenar", icon: GraduationCap, paths: ["/", "/practicar"] },
+  { to: "/jugar", label: "Jugar", icon: Spade, paths: ["/jugar"] },
 ] as const;
 
 // Every page goes through here, so the welcome gate and global sheets live here too.
@@ -20,6 +21,16 @@ export function AppShell({ children }: { children: ReactNode }) {
   const profile = useProfile();
   const [pro] = usePro();
   const sheet = useSheet();
+  const chips = useChips();
+  const path = useRouterState({ select: (s) => s.location.pathname });
+
+  // Welcome bonus: every new player gets fictitious chips once.
+  useEffect(() => {
+    if (profile && chips === null) {
+      setChips(START_CHIPS);
+      openSheet("bonus");
+    }
+  }, [profile, chips]);
 
   // Server render / hydration: we don't know the profile yet, show only the logo.
   if (profile === undefined)
@@ -65,9 +76,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             <li key={t.to}>
               <Link
                 to={t.to}
-                activeOptions={{ exact: true }}
-                className="flex h-full items-center justify-center gap-2 rounded-xl text-sm font-semibold text-muted-foreground transition-colors duration-200 active:scale-95"
-                activeProps={{ className: "bg-primary/15 text-primary" }}
+                className={`flex h-full items-center justify-center gap-2 rounded-xl text-sm font-semibold transition-colors duration-200 active:scale-95 ${(t.paths as readonly string[]).includes(path) ? "bg-primary/15 text-primary" : "text-muted-foreground"}`}
               >
                 <t.icon className="size-5" aria-hidden="true" />
                 {t.label}
@@ -79,6 +88,34 @@ export function AppShell({ children }: { children: ReactNode }) {
 
       <Sheet open={sheet === "pro"} onOpenChange={close} title="CuentaCartas PRO">
         <ProPanel />
+      </Sheet>
+      <Sheet open={sheet === "bonus"} onOpenChange={close} title="Bono de bienvenida">
+        <div className="flex flex-col items-center text-center">
+          <span className="flex size-16 animate-float items-center justify-center rounded-full bg-gold shadow-action">
+            <Coins className="size-8 text-primary-foreground" aria-hidden="true" />
+          </span>
+          <h2 className="mt-4 font-display text-[1.75rem] leading-tight">
+            ¡Bienvenido, {profile.name}!
+          </h2>
+          <p className="mt-2 text-muted-foreground">Te regalamos</p>
+          <p className="font-display text-5xl text-gold">{fmt(START_CHIPS)}</p>
+          <p className="mt-1 text-sm text-muted-foreground">
+            fichas para jugar Blackjack. Son ficticias: no se compran ni se cobran.
+          </p>
+          <Button asChild variant="gold" size="xl" className="mt-6 w-full">
+            <Link to="/jugar" onClick={() => openSheet(null)}>
+              Ir a la mesa
+            </Link>
+          </Button>
+          <Button
+            variant="ghost"
+            size="xl"
+            className="mt-2 w-full text-muted-foreground"
+            onClick={() => openSheet(null)}
+          >
+            Primero entrenar
+          </Button>
+        </div>
       </Sheet>
       <Sheet open={sheet === "profile"} onOpenChange={close} title="Tu perfil">
         <ProfilePanel profile={profile} pro={pro} />
