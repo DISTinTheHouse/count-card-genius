@@ -13,9 +13,12 @@ Principio: **ligera, simple, sin complicar al usuario.** Antes de añadir una li
 | Panel PRO (hoja y `/pro`) | `src/components/ProPanel.tsx` |
 | Hojas globales (PRO, perfil) | `src/lib/sheets.ts` → `openSheet("pro")` |
 | Contenido de lecciones | `src/lib/lessons.ts` (solo datos) |
+| Motor de Blackjack (reglas, bots, crupier, pagos) | `src/lib/blackjack.ts` (funciones puras, tests en `src/test/blackjack.test.ts`) |
+| Mesa de juego | `src/routes/jugar.tsx` |
+| Fichas ficticias | `src/lib/chips.ts` (10,000 de bienvenida, recarga gratis en 0) |
 | Pantalla de bienvenida | `src/components/Welcome.tsx` |
 | Carta | `src/components/PlayingCard.tsx` (memo, solo CSS) |
-| Páginas | `src/routes/` (`index` Aprender, `practicar`; `pro` solo para enlaces antiguos) |
+| Páginas | `src/routes/` (`index` + `practicar` = pestaña Entrenar, `jugar` = pestaña Jugar; `pro` solo para enlaces antiguos) |
 | Reglas Hi-Lo, zapato, PRO, estadísticas | `src/lib/cards.ts` |
 | Perfil local | `src/lib/profile.ts` |
 | localStorage reactivo | `src/lib/storage.ts` (`useLocal`, `writeLocal`) |
@@ -35,6 +38,8 @@ Principio: **ligera, simple, sin complicar al usuario.** Antes de añadir una li
 | `cuentacartas-stats` | `{ rounds, correct }` |
 | `cc-today` | rondas gratis de hoy |
 | `cuentacartas-lessons-read` | lecciones abiertas |
+| `cuentacartas-chips` | saldo de fichas (sin clave = aún no recibió el bono) |
+| `cuentacartas-count-help` | `"0"` = ocultar la cuenta en la mesa |
 
 Lee y escribe siempre con `useLocal` / `writeLocal`, así todos los componentes se actualizan a la vez. Cuando llegue el backend, cambia la implementación de `useProfile` y `usePro` sin cambiar su forma.
 
@@ -51,6 +56,10 @@ Lee y escribe siempre con `useLocal` / `writeLocal`, así todos los componentes 
 - Para pedir PRO desde cualquier sitio: `openSheet("pro")`, no un enlace.
 - En Practicar la acción principal va justo debajo de la mesa: debe verse sin hacer scroll.
 - Resultado: acierto = confeti (`Confetti.tsx`, canvas sin librerías) + "Siguiente ronda"; fallo = "Reintentar" o "Ajustar dificultad" (vuelve a los ajustes). Los ajustes PRO solo se muestran a usuarios PRO.
+
+## Blackjack
+
+Reglas: 6 barajas, Blackjack paga 3:2, el crupier se planta en 17 y revisa Blackjack, doblar con 2 cartas, una sola división. Cada acción del motor devuelve un `Game` nuevo; la UI solo pinta y programa el siguiente paso de bots/crupier. La apuesta se descuenta al repartir/doblar/dividir y el pago se suma al terminar, así recargar la página a mitad de mano no regala fichas.
 
 ## Reglas
 

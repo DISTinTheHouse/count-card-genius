@@ -10,12 +10,18 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as JugarRouteImport } from './routes/jugar'
 import { Route as PracticarRouteImport } from './routes/practicar'
 import { Route as ProRouteImport } from './routes/pro'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const JugarRoute = JugarRouteImport.update({
+  id: '/jugar',
+  path: '/jugar',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PracticarRoute = PracticarRouteImport.update({
@@ -31,30 +37,34 @@ const ProRoute = ProRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/jugar': typeof JugarRoute
   '/practicar': typeof PracticarRoute
   '/pro': typeof ProRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/jugar': typeof JugarRoute
   '/practicar': typeof PracticarRoute
   '/pro': typeof ProRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/jugar': typeof JugarRoute
   '/practicar': typeof PracticarRoute
   '/pro': typeof ProRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/practicar' | '/pro'
+  fullPaths: '/' | '/jugar' | '/practicar' | '/pro'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/practicar' | '/pro'
-  id: '__root__' | '/' | '/practicar' | '/pro'
+  to: '/' | '/jugar' | '/practicar' | '/pro'
+  id: '__root__' | '/' | '/jugar' | '/practicar' | '/pro'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  JugarRoute: typeof JugarRoute
   PracticarRoute: typeof PracticarRoute
   ProRoute: typeof ProRoute
 }
@@ -66,6 +76,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/jugar': {
+      id: '/jugar'
+      path: '/jugar'
+      fullPath: '/jugar'
+      preLoaderRoute: typeof JugarRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/practicar': {
@@ -87,6 +104,7 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  JugarRoute: JugarRoute,
   PracticarRoute: PracticarRoute,
   ProRoute: ProRoute,
 }
