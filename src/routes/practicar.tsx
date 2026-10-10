@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { AppShell } from "@/components/AppShell";
-import { SlidersHorizontal } from "lucide-react";
+import { Lock, SlidersHorizontal } from "lucide-react";
 import { Confetti } from "@/components/Confetti";
 import { PlayingCard } from "@/components/PlayingCard";
 import { Button } from "@/components/ui/button";
@@ -240,7 +240,17 @@ function Practice() {
                 className="w-full accent-primary"
               />
             </Setting>
-            {/* PRO settings stay hidden until PRO is a real product. */}
+            {/* Free users see PRO settings as one quiet row, not as locked sliders. */}
+            {!pro && (
+              <button
+                onClick={() => openSheet("pro")}
+                className="flex w-full items-center gap-2 border-t pt-3 text-left text-xs text-muted-foreground"
+              >
+                <Lock className="size-3.5 text-primary/80" aria-hidden="true" />
+                <span className="flex-1">Velocidad, multi-baraja y hasta 52 cartas</span>
+                <span className="font-bold text-primary">PRO</span>
+              </button>
+            )}
             {pro && (
               <>
                 <Setting label="Velocidad" value={`${(pace / 1000).toFixed(1)}s`} locked={!pro}>

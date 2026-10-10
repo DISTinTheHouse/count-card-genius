@@ -1,13 +1,13 @@
 import { Link, useRouterState } from "@tanstack/react-router";
 import { useEffect, type ReactNode } from "react";
-import { Coins, Crown, GraduationCap, LogOut, Spade } from "lucide-react";
+import { ChevronRight, Coins, Crown, GraduationCap, LogOut, Spade } from "lucide-react";
 import { Logo } from "@/components/Logo";
 import { ProPanel } from "@/components/ProPanel";
 import { Sheet } from "@/components/Sheet";
 import { Welcome } from "@/components/Welcome";
 import { Button } from "@/components/ui/button";
 import { usePro, useStats } from "@/lib/cards";
-import { START_CHIPS, fmt, setChips, useChips } from "@/lib/chips";
+import { START_CHIPS, fmt, setChips, short, useChips } from "@/lib/chips";
 import { saveProfile, useProfile, type Profile } from "@/lib/profile";
 import { openSheet, useSheet } from "@/lib/sheets";
 
@@ -48,19 +48,31 @@ export function AppShell({ children }: { children: ReactNode }) {
       <header className="flex items-center justify-between px-5 pt-[max(1.25rem,env(safe-area-inset-top))] pb-2">
         <Logo className="text-xl" />
         <div className="flex items-center gap-2">
-          <button
-            onClick={() => openSheet("pro")}
-            className={`flex h-9 items-center gap-1.5 rounded-full px-3 text-xs font-bold transition-transform active:scale-95 ${pro ? "border border-primary/40 text-primary" : "bg-gold text-primary-foreground shadow-action"}`}
+          <Link
+            to="/jugar"
+            aria-label={`${chips === undefined || chips === null ? 0 : fmt(chips)} fichas`}
+            className="flex h-9 items-center gap-1.5 rounded-full border bg-card pr-3.5 pl-1.5 text-sm font-extrabold tabular-nums transition-transform active:scale-95"
           >
-            <Crown className="size-3.5" aria-hidden="true" />
-            PRO
-          </button>
+            {/* Mini version of the 1K table chip */}
+            <span
+              className="size-6 rounded-full border-[3px] border-dashed border-white/50 bg-gold shadow-action"
+              aria-hidden="true"
+            />
+            <span key={chips ?? 0} className="animate-rise">
+              {short(chips ?? 0)}
+            </span>
+          </Link>
           <button
             onClick={() => openSheet("profile")}
             aria-label={`Perfil de ${profile.name}`}
-            className="flex size-9 items-center justify-center rounded-full border bg-card text-sm font-extrabold text-foreground transition-transform active:scale-95"
+            className="relative flex size-9 items-center justify-center rounded-full border bg-card text-sm font-extrabold text-foreground transition-transform active:scale-95"
           >
             {profile.name.charAt(0).toUpperCase()}
+            {pro && (
+              <span className="absolute -right-1 -bottom-1 flex size-4 items-center justify-center rounded-full bg-gold">
+                <Crown className="size-2.5 text-primary-foreground" aria-label="PRO" />
+              </span>
+            )}
           </button>
         </div>
       </header>
@@ -146,6 +158,23 @@ function ProfilePanel({ profile, pro }: { profile: Profile; pro: boolean }) {
           <p className="text-xs text-muted-foreground">Precisión</p>
         </div>
       </div>
+      <button
+        onClick={() => openSheet("pro")}
+        className="mt-3 flex w-full items-center gap-3 rounded-2xl border bg-card p-4 text-left transition-colors active:bg-accent"
+      >
+        <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-gold">
+          <Crown className="size-4 text-primary-foreground" aria-hidden="true" />
+        </span>
+        <span className="min-w-0 flex-1">
+          <span className="block text-sm font-semibold">
+            {pro ? "PRO activo" : "CuentaCartas PRO"}
+          </span>
+          <span className="block text-xs text-muted-foreground">
+            {pro ? "Gestionar tu plan" : "Rondas ilimitadas y más ajustes"}
+          </span>
+        </span>
+        <ChevronRight className="size-4 shrink-0 text-muted-foreground" aria-hidden="true" />
+      </button>
       <Button
         variant="glass"
         size="xl"

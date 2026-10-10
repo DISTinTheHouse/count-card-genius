@@ -114,12 +114,8 @@ function Play() {
 
   return (
     <AppShell>
-      {/* Balance + count help */}
-      <div className="mt-1 flex items-center justify-between">
-        <span className="flex items-center gap-2 rounded-full border bg-card px-3 py-1.5 text-sm font-bold">
-          <Coins className="size-4 text-primary" aria-hidden="true" />
-          {chips === undefined ? "—" : fmt(balance)}
-        </span>
+      {/* Count help (balance lives in the header) */}
+      <div className="mt-1 flex justify-end">
         <button
           onClick={() => writeLocal(COUNT_HELP, showCount ? "0" : "1")}
           className="flex items-center gap-2 rounded-full border bg-card px-3 py-1.5 text-xs font-semibold text-muted-foreground transition-colors active:bg-accent"
@@ -262,7 +258,9 @@ function Play() {
 
           <div className="rounded-3xl border bg-card p-4">
             <div className="flex items-center justify-between text-sm">
-              <span className="text-muted-foreground">Apuesta</span>
+              <span className="text-muted-foreground">
+                Apuesta <span className="text-xs">· saldo {fmt(balance)}</span>
+              </span>
               <span className="font-display text-lg">{fmt(bettable)}</span>
             </div>
             <div className="mt-3 flex justify-between gap-2">
