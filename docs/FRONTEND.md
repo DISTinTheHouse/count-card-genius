@@ -8,6 +8,7 @@ Principio: **ligera, simple, sin complicar al usuario.** Antes de añadir una li
 | --- | --- |
 | Colores, fuentes, sombras, animaciones | `src/styles.css` (tokens OKLCH en `:root`) |
 | Layout + barra inferior + puerta de bienvenida | `src/components/AppShell.tsx` |
+| Logo | `src/components/Logo.tsx` |
 | Pantalla de bienvenida | `src/components/Welcome.tsx` |
 | Carta | `src/components/PlayingCard.tsx` (memo, solo CSS) |
 | Páginas | `src/routes/` (`index` Aprender, `practicar`, `pro`) |
@@ -31,6 +32,13 @@ Principio: **ligera, simple, sin complicar al usuario.** Antes de añadir una li
 | `cc-today` | rondas gratis de hoy |
 
 Lee y escribe siempre con `useLocal` / `writeLocal`, así todos los componentes se actualizan a la vez. Cuando llegue el backend, cambia la implementación de `useProfile` y `usePro` sin cambiar su forma.
+
+## Estilo
+
+- Una sola fuente: **Plus Jakarta Sans**. `font-display` = su peso 800 con tracking ajustado.
+- Animaciones solo CSS: `animate-rise` (entrada, escalonar con `animationDelay`), `animate-float` (bienvenida), `animate-deal` (carta). Se desactivan con "reducir movimiento".
+- Botones: `variant="gold"` (acción principal), `variant="glass"` (secundaria), `size="xl"` para CTAs móviles.
+- Radios grandes (`rounded-2xl`/`rounded-3xl`), barra inferior flotante, márgenes con `env(safe-area-inset-*)`.
 
 ## Reglas
 
