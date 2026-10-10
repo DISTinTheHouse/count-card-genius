@@ -16,15 +16,15 @@ export function Welcome() {
   }
 
   return (
-    <main className="relative mx-auto flex min-h-dvh max-w-md flex-col justify-between overflow-hidden px-6 pt-[max(4rem,env(safe-area-inset-top))] pb-[max(2rem,env(safe-area-inset-bottom))]">
+    <main className="relative mx-auto flex min-h-dvh max-w-md flex-col overflow-hidden px-6 pt-[max(2rem,env(safe-area-inset-top))] pb-[max(2rem,env(safe-area-inset-bottom))]">
       {/* Soft gold glow behind the cards */}
       <div
         aria-hidden="true"
-        className="pointer-events-none absolute left-1/2 top-16 size-72 -translate-x-1/2 rounded-full bg-primary/20 blur-3xl"
+        className="pointer-events-none absolute left-1/2 top-1/4 size-72 -translate-x-1/2 rounded-full bg-primary/20 blur-3xl"
       />
 
-      <div className="relative flex flex-col items-center text-center">
-        <div className="relative mt-6 h-40 w-48" aria-hidden="true">
+      <div className="relative flex flex-1 flex-col items-center justify-center pb-10 text-center">
+        <div className="relative h-40 w-48" aria-hidden="true">
           <div className="absolute left-0 top-6 animate-float [animation-delay:-1s]">
             <PlayingCard
               card={{ rank: "5", suit: "♥" }}
