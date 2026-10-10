@@ -1,6 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { AppShell } from "@/components/AppShell";
+import { SlidersHorizontal } from "lucide-react";
+import { Confetti } from "@/components/Confetti";
 import { PlayingCard } from "@/components/PlayingCard";
 import { Button } from "@/components/ui/button";
 import { type Card, hiLo, loadStats, saveStats, shoe, usePro, type Stats } from "@/lib/cards";
@@ -125,12 +127,13 @@ function Practice() {
         )}
         {phase === "answer" && <p className="font-display text-3xl">¿Cuál es la cuenta?</p>}
         {phase === "result" && (
-          <div className="animate-rise text-center">
+          <div className="animate-rise px-6 text-center">
             <p className={`font-display text-5xl ${ok ? "text-success" : "text-destructive"}`}>
               {ok ? "¡Correcto!" : "Fallaste"}
             </p>
             <p className="mt-2 text-muted-foreground">
-              La cuenta era <b className="text-foreground">{truth > 0 ? `+${truth}` : truth}</b>
+              {ok ? "La cuenta era " : `Dijiste ${guess}, la cuenta era `}
+              <b className="text-foreground">{truth > 0 ? `+${truth}` : truth}</b>
             </p>
           </div>
         )}
@@ -184,7 +187,32 @@ function Practice() {
         </form>
       )}
 
-      {(phase === "idle" || phase === "result") && (
+      {phase === "result" && ok && <Confetti key={stats.rounds} />}
+
+      {phase === "result" && (
+        <div className="mt-3 animate-rise space-y-3">
+          {!ok && (
+            <p className="px-1 text-center text-sm text-muted-foreground">
+              ¿Lo intentas de nuevo o ajustas la dificultad?
+            </p>
+          )}
+          {limited ? (
+            <Button onClick={() => openSheet("pro")} variant="gold" size="xl" className="w-full">
+              Límite diario alcanzado · Hazte PRO
+            </Button>
+          ) : (
+            <Button onClick={start} variant="gold" size="xl" className="w-full">
+              {ok ? "Siguiente ronda" : "Reintentar"}
+            </Button>
+          )}
+          <Button onClick={() => setPhase("idle")} variant="glass" size="xl" className="w-full">
+            <SlidersHorizontal aria-hidden="true" />
+            Ajustar dificultad
+          </Button>
+        </div>
+      )}
+
+      {phase === "idle" && (
         <>
           {/* Main action sits right under the table so it's always on screen. */}
           {limited ? (
@@ -198,7 +226,7 @@ function Practice() {
             </Button>
           ) : (
             <Button onClick={start} variant="gold" size="xl" className="mt-3 w-full">
-              {phase === "result" ? "Otra ronda" : "Repartir"}
+              Repartir
             </Button>
           )}
           <section className="mt-3 space-y-4 rounded-3xl border bg-card p-4">
@@ -212,29 +240,34 @@ function Practice() {
                 className="w-full accent-primary"
               />
             </Setting>
-            <Setting label="Velocidad" value={`${(pace / 1000).toFixed(1)}s`} locked={!pro}>
-              <input
-                type="range"
-                min={300}
-                max={2000}
-                step={100}
-                disabled={!pro}
-                value={pace}
-                onChange={(e) => setSpeed(+e.target.value)}
-                className="w-full accent-primary"
-              />
-            </Setting>
-            <Setting label="Barajas" value={String(pro ? decks : 1)} locked={!pro}>
-              <input
-                type="range"
-                min={1}
-                max={8}
-                disabled={!pro}
-                value={pro ? decks : 1}
-                onChange={(e) => setDecks(+e.target.value)}
-                className="w-full accent-primary"
-              />
-            </Setting>
+            {/* PRO settings stay hidden until PRO is a real product. */}
+            {pro && (
+              <>
+                <Setting label="Velocidad" value={`${(pace / 1000).toFixed(1)}s`} locked={!pro}>
+                  <input
+                    type="range"
+                    min={300}
+                    max={2000}
+                    step={100}
+                    disabled={!pro}
+                    value={pace}
+                    onChange={(e) => setSpeed(+e.target.value)}
+                    className="w-full accent-primary"
+                  />
+                </Setting>
+                <Setting label="Barajas" value={String(pro ? decks : 1)} locked={!pro}>
+                  <input
+                    type="range"
+                    min={1}
+                    max={8}
+                    disabled={!pro}
+                    value={pro ? decks : 1}
+                    onChange={(e) => setDecks(+e.target.value)}
+                    className="w-full accent-primary"
+                  />
+                </Setting>
+              </>
+            )}
           </section>
         </>
       )}

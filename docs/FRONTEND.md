@@ -50,6 +50,7 @@ Lee y escribe siempre con `useLocal` / `writeLocal`, así todos los componentes 
 - Modales = `Sheet` (sube desde abajo, se cierra arrastrando). Nada de `window.confirm`.
 - Para pedir PRO desde cualquier sitio: `openSheet("pro")`, no un enlace.
 - En Practicar la acción principal va justo debajo de la mesa: debe verse sin hacer scroll.
+- Resultado: acierto = confeti (`Confetti.tsx`, canvas sin librerías) + "Siguiente ronda"; fallo = "Reintentar" o "Ajustar dificultad" (vuelve a los ajustes). Los ajustes PRO solo se muestran a usuarios PRO.
 
 ## Reglas
 
