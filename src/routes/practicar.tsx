@@ -1,9 +1,10 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { AppShell } from "@/components/AppShell";
 import { PlayingCard } from "@/components/PlayingCard";
 import { Button } from "@/components/ui/button";
 import { type Card, hiLo, loadStats, saveStats, shoe, usePro, type Stats } from "@/lib/cards";
+import { openSheet } from "@/lib/sheets";
 import { readLocal, writeLocal } from "@/lib/storage";
 
 export const Route = createFileRoute("/practicar")({
@@ -94,24 +95,38 @@ function Practice() {
 
   return (
     <AppShell>
-      <div className="mt-2 flex justify-between rounded-lg border bg-card px-3 py-2 text-xs font-semibold text-muted-foreground">
+      <div className="mt-1 flex items-center justify-between px-1 text-xs font-semibold text-muted-foreground">
         <span>
-          Aciertos: {stats.correct}/{stats.rounds}
+          Aciertos{" "}
+          <span className="text-foreground">
+            {stats.correct}/{stats.rounds}
+          </span>
         </span>
-        <span>{pro ? "PRO · ilimitado" : `Hoy: ${today}/${FREE_DAILY}`}</span>
+        <span>
+          {pro ? (
+            "PRO · ilimitado"
+          ) : (
+            <>
+              Hoy{" "}
+              <span className="text-foreground">
+                {today}/{FREE_DAILY}
+              </span>
+            </>
+          )}
+        </span>
       </div>
 
-      <div className="mt-4 flex h-60 items-center justify-center rounded-2xl border bg-card/50 [contain:layout_style]">
+      <div className="relative mt-3 flex h-60 items-center justify-center overflow-hidden rounded-3xl border bg-card/50 [contain:layout_style]">
         {phase === "deal" && cards[i] && <PlayingCard key={i} card={cards[i]} />}
         {phase === "idle" && (
-          <p className="text-center text-muted-foreground">
+          <p className="max-w-56 text-center text-muted-foreground">
             Memoriza la cuenta mientras salen las cartas.
           </p>
         )}
-        {phase === "answer" && <p className="font-display text-4xl">¿Cuál es la cuenta?</p>}
+        {phase === "answer" && <p className="font-display text-3xl">¿Cuál es la cuenta?</p>}
         {phase === "result" && (
-          <div className="text-center">
-            <p className={`font-display text-6xl ${ok ? "text-success" : "text-destructive"}`}>
+          <div className="animate-rise text-center">
+            <p className={`font-display text-5xl ${ok ? "text-success" : "text-destructive"}`}>
               {ok ? "¡Correcto!" : "Fallaste"}
             </p>
             <p className="mt-2 text-muted-foreground">
@@ -119,22 +134,29 @@ function Practice() {
             </p>
           </div>
         )}
+        {phase === "deal" && (
+          <div className="absolute inset-x-0 bottom-0 h-1 bg-foreground/10">
+            <div
+              className="h-full bg-gold transition-[width] duration-200"
+              style={{ width: `${((i + 1) / n) * 100}%` }}
+            />
+          </div>
+        )}
       </div>
 
       {phase === "deal" && (
-        <p className="text-center text-sm text-muted-foreground">
+        <p className="mt-3 text-center text-sm text-muted-foreground">
           Carta {i + 1} de {n}
         </p>
       )}
 
       {phase === "answer" && (
-        <form onSubmit={submit} className="mt-4 flex gap-2">
+        <form onSubmit={submit} className="mt-3 flex h-14 gap-2">
           {/* iOS numeric keypads have no minus key, hence the ± button. */}
           <Button
             type="button"
-            variant="secondary"
-            size="lg"
-            className="h-auto px-4 text-lg"
+            variant="glass"
+            className="h-full w-14 rounded-2xl text-xl"
             aria-label="Cambiar signo"
             onClick={() =>
               setGuess((g) => (g.startsWith("-") || g.startsWith("−") ? g.slice(1) : `-${g}`))
@@ -149,14 +171,13 @@ function Practice() {
             onChange={(e) => setGuess(e.target.value)}
             placeholder="Ej: -2"
             aria-label="Tu cuenta"
-            className="min-w-0 flex-1 rounded-xl border bg-input/20 px-4 py-3 text-lg outline-none focus:border-ring"
+            className="min-w-0 flex-1 rounded-2xl border bg-input/20 px-4 text-center font-display text-2xl outline-none focus:border-ring"
           />
           <Button
             type="submit"
             disabled={guess === ""}
             variant="gold"
-            size="lg"
-            className="h-auto px-6"
+            className="h-full rounded-2xl px-6 text-base"
           >
             OK
           </Button>
@@ -165,7 +186,22 @@ function Practice() {
 
       {(phase === "idle" || phase === "result") && (
         <>
-          <section className="mt-4 space-y-5 rounded-xl border bg-card p-4">
+          {/* Main action sits right under the table so it's always on screen. */}
+          {limited ? (
+            <Button
+              onClick={() => openSheet("pro")}
+              variant="gold"
+              size="xl"
+              className="mt-3 w-full"
+            >
+              Límite diario alcanzado · Hazte PRO
+            </Button>
+          ) : (
+            <Button onClick={start} variant="gold" size="xl" className="mt-3 w-full">
+              {phase === "result" ? "Otra ronda" : "Repartir"}
+            </Button>
+          )}
+          <section className="mt-3 space-y-4 rounded-3xl border bg-card p-4">
             <Setting label="Cartas" value={String(n)} locked={false}>
               <input
                 type="range"
@@ -200,15 +236,6 @@ function Practice() {
               />
             </Setting>
           </section>
-          {limited ? (
-            <Button asChild variant="gold" size="lg" className="mt-4 w-full">
-              <Link to="/pro">Límite diario alcanzado · Hazte PRO</Link>
-            </Button>
-          ) : (
-            <Button onClick={start} variant="gold" size="lg" className="mt-4 w-full">
-              {phase === "result" ? "Otra ronda" : "Repartir"}
-            </Button>
-          )}
         </>
       )}
     </AppShell>
@@ -232,12 +259,12 @@ function Setting({
         <span>
           {label}{" "}
           {locked && (
-            <Link
-              to="/pro"
+            <button
+              onClick={() => openSheet("pro")}
               className="ml-1 rounded-full border border-primary/30 bg-primary/15 px-2 py-0.5 text-[10px] font-bold text-primary"
             >
               PRO
-            </Link>
+            </button>
           )}
         </span>
         <span className="text-muted-foreground">{value}</span>
