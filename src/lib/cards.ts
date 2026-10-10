@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import { readLocal, useLocal, writeLocal } from "./storage";
 
 export const RANKS = ["2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K", "A"] as const;
@@ -39,6 +40,17 @@ export function loadStats(): Stats {
   } catch {
     return { rounds: 0, correct: 0 };
   }
+}
+/** Reactive read of the same stats, for display. */
+export function useStats(): Stats {
+  const raw = useLocal(STATS);
+  return useMemo(() => {
+    try {
+      return JSON.parse(raw || "") as Stats;
+    } catch {
+      return { rounds: 0, correct: 0 };
+    }
+  }, [raw]);
 }
 export function saveStats(s: Stats) {
   writeLocal(STATS, JSON.stringify(s));

@@ -5,8 +5,8 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
-  --font-display: "Archivo Black", sans-serif;
-  --font-sans: "Hind", sans-serif;
+  --font-display: "Plus Jakarta Sans", system-ui, sans-serif;
+  --font-sans: "Plus Jakarta Sans", system-ui, sans-serif;
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
@@ -64,27 +64,44 @@
   --playing-foreground: oklch(0.18 0.01 260);
   --suit-red: oklch(0.59 0.22 25);
   --pro: oklch(0.8 0.15 85);
-  --felt: linear-gradient(180deg, oklch(0.25 0.065 162), oklch(0.18 0.044 163) 72%);
+  --felt:
+    radial-gradient(120% 60% at 50% -10%, oklch(0.34 0.08 160 / 70%), transparent 60%),
+    linear-gradient(180deg, oklch(0.22 0.055 162), oklch(0.16 0.04 163) 72%);
   --gold: linear-gradient(115deg, oklch(0.86 0.16 88), oklch(0.72 0.16 72));
   --shadow-card: 0 14px 34px -16px oklch(0 0 0 / 72%);
   --shadow-action: 0 8px 24px -10px oklch(0.8 0.15 85 / 58%);
 }
 
 @layer base {
-  * { border-color: var(--color-border); }
+  * {
+    border-color: var(--color-border);
+  }
   body {
     background: var(--felt);
     background-attachment: fixed;
     color: var(--color-foreground);
     font-family: var(--font-sans);
     min-height: 100vh;
-    letter-spacing: 0;
+    letter-spacing: -0.005em;
+    -webkit-font-smoothing: antialiased;
+    -webkit-tap-highlight-color: transparent;
+  }
+  /* One font family; "display" is just its heaviest weight. */
+  .font-display {
+    font-weight: 800;
+    letter-spacing: -0.035em;
   }
 }
 
-@utility bg-gold { background-image: var(--gold); }
-@utility shadow-playing { box-shadow: var(--shadow-card); }
-@utility shadow-action { box-shadow: var(--shadow-action); }
+@utility bg-gold {
+  background-image: var(--gold);
+}
+@utility shadow-playing {
+  box-shadow: var(--shadow-card);
+}
+@utility shadow-action {
+  box-shadow: var(--shadow-action);
+}
 @utility text-gold {
   background-image: var(--gold);
   -webkit-background-clip: text;
@@ -93,13 +110,47 @@
 }
 
 @keyframes deal {
-  from { transform: translateY(-40px) rotate(-12deg) scale(0.8); opacity: 0; }
-  to { transform: none; opacity: 1; }
+  from {
+    transform: translateY(-40px) rotate(-12deg) scale(0.8);
+    opacity: 0;
+  }
+  to {
+    transform: none;
+    opacity: 1;
+  }
 }
-@utility animate-deal { animation: deal 0.22s ease-out; }
+@utility animate-deal {
+  animation: deal 0.22s ease-out;
+}
+
+/* Entrance for screens and list items. Stagger with style={{ animationDelay }}. */
+@keyframes rise {
+  from {
+    transform: translateY(12px);
+    opacity: 0;
+  }
+  to {
+    transform: none;
+    opacity: 1;
+  }
+}
+@utility animate-rise {
+  animation: rise 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+@keyframes float {
+  50% {
+    transform: translateY(-8px);
+  }
+}
+@utility animate-float {
+  animation: float 4s ease-in-out infinite;
+}
 
 @media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after {
+  *,
+  *::before,
+  *::after {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     scroll-behavior: auto !important;
