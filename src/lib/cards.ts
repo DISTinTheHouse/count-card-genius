@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { readLocal, useLocal, writeLocal } from "./storage";
 
 export const RANKS = ["2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K", "A"] as const;
 export const SUITS = ["♠", "♥", "♦", "♣"] as const;
@@ -24,19 +24,22 @@ export function shoe(decks: number): Card[] {
 }
 
 const KEY = "cuentacartas-pro";
+/** Demo flag shared by every component; replace with the real subscription check. */
 export function usePro() {
-  const [pro, setPro] = useState(false);
-  useEffect(() => setPro(localStorage.getItem(KEY) === "1"), []);
-  const set = (v: boolean) => {
-    localStorage.setItem(KEY, v ? "1" : "0");
-    setPro(v);
-  };
+  const pro = useLocal(KEY) === "1";
+  const set = (v: boolean) => writeLocal(KEY, v ? "1" : "0");
   return [pro, set] as const;
 }
 
 const STATS = "cuentacartas-stats";
 export type Stats = { rounds: number; correct: number };
 export function loadStats(): Stats {
-  try { return JSON.parse(localStorage.getItem(STATS) || "") as Stats; } catch { return { rounds: 0, correct: 0 }; }
+  try {
+    return JSON.parse(readLocal(STATS) || "") as Stats;
+  } catch {
+    return { rounds: 0, correct: 0 };
+  }
 }
-export function saveStats(s: Stats) { localStorage.setItem(STATS, JSON.stringify(s)); }
+export function saveStats(s: Stats) {
+  writeLocal(STATS, JSON.stringify(s));
+}
