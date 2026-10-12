@@ -6,10 +6,16 @@
 // You can pass additional config via defineConfig({ vite: { ... }, etc... }) if needed.
 import { defineConfig } from "@lovable.dev/vite-tanstack-config";
 
+// `npm run build:mobile` sets CAPACITOR=1: a static SPA (no SSR server) that Capacitor
+// bundles into the iOS/Android apps. Normal builds (Lovable, Vercel) are unaffected.
+const mobile = process.env["CAPACITOR"] === "1";
+
 export default defineConfig({
   tanstackStart: {
     // Redirect TanStack Start's bundled server entry to src/server.ts (our SSR error wrapper).
     // nitro/vite builds from this
     server: { entry: "server" },
+    ...(mobile && { prerender: { enabled: true, crawlLinks: true } }),
   },
+  ...(mobile && { nitro: false }),
 });
