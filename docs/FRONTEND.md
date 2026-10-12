@@ -35,12 +35,13 @@ Principio: **ligera, simple, sin complicar al usuario.** Antes de añadir una li
 | Clave localStorage | Contenido |
 | --- | --- |
 | `cuentacartas-profile` | `{ name, guest }` |
-| `cuentacartas-pro` | `"1"` = PRO (demo) |
+| `cuentacartas-pro` | `"1"` = PRO. Durante la beta es gratis y no se muestran precios (las tiendas no permiten precios sin su sistema de compras) |
 | `cuentacartas-stats` | `{ rounds, correct }` |
 | `cc-today` | rondas gratis de hoy |
 | `cuentacartas-lessons-read` | lecciones abiertas |
 | `cuentacartas-chips` | saldo de fichas (sin clave = aún no recibió el bono) |
 | `cuentacartas-count-help` | `"0"` = ocultar la cuenta en la mesa |
+| `cuentacartas-sound` | `"0"` = sin sonido ni vibración (`src/lib/sound.ts`, sonidos sintetizados, sin archivos) |
 | `cuentacartas-table-stats` | estadísticas de mesa: manos, ganadas, jugadas correctas según estrategia básica, mejor racha (`src/lib/table-stats.ts`) |
 
 Lee y escribe siempre con `useLocal` / `writeLocal`, así todos los componentes se actualizan a la vez. Cuando llegue el backend, cambia la implementación de `useProfile` y `usePro` sin cambiar su forma.

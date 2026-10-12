@@ -31,6 +31,7 @@ import {
 } from "@/lib/blackjack";
 import { START_CHIPS, fmt, setChips, useChips } from "@/lib/chips";
 import { useLocal, writeLocal } from "@/lib/storage";
+import { cue } from "@/lib/sound";
 import { recordDecision, recordHand } from "@/lib/table-stats";
 
 export const Route = createFileRoute("/jugar")({
@@ -99,6 +100,14 @@ function Play() {
     return () => clearTimeout(t);
   }, [game]);
 
+  // A tick for every card that lands on the table.
+  const dealt =
+    game.dealer.length +
+    game.seats.reduce((a, s) => a + s.hands.reduce((b, h) => b + h.cards.length, 0), 0);
+  useEffect(() => {
+    if (dealt > 0) cue("card");
+  }, [dealt]);
+
   // Pay out once when the round ends.
   useEffect(() => {
     if (game.phase !== "done" || result !== null) return;
@@ -109,6 +118,7 @@ function Play() {
     setChips(balance + back);
     setResult(back - staked);
     recordHand(back - staked, isBlackjack(you.hands[0]!), balance + back);
+    if (back !== staked) cue(back > staked ? "win" : "lose");
   }, [game, result, balance]);
 
   const you = game.seats[0];
@@ -371,7 +381,10 @@ function Play() {
               {CHIPS.map((v) => (
                 <button
                   key={v}
-                  onClick={() => setBet((b) => Math.min(b + v, balance))}
+                  onClick={() => {
+                    cue("chip");
+                    setBet((b) => Math.min(b + v, balance));
+                  }}
                   disabled={balance - bettable < v}
                   className={`flex size-12 items-center justify-center rounded-full border-4 border-dashed border-white/40 text-[0.7rem] font-extrabold shadow-playing transition-transform active:scale-90 disabled:opacity-30 ${CHIP_STYLE[v]}`}
                 >

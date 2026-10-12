@@ -1,6 +1,15 @@
 import { Link, useRouterState } from "@tanstack/react-router";
 import { useEffect, type ReactNode } from "react";
-import { ChevronRight, Coins, Crown, GraduationCap, LogOut, Spade } from "lucide-react";
+import {
+  ChevronRight,
+  Coins,
+  Crown,
+  GraduationCap,
+  LogOut,
+  Spade,
+  Volume2,
+  VolumeX,
+} from "lucide-react";
 import { Logo } from "@/components/Logo";
 import { ProPanel } from "@/components/ProPanel";
 import { Sheet } from "@/components/Sheet";
@@ -10,6 +19,7 @@ import { usePro, useStats } from "@/lib/cards";
 import { START_CHIPS, fmt, setChips, short, useChips } from "@/lib/chips";
 import { saveProfile, useProfile, type Profile } from "@/lib/profile";
 import { openSheet, useSheet } from "@/lib/sheets";
+import { setSoundOn, useSoundOn } from "@/lib/sound";
 import { useTableStats } from "@/lib/table-stats";
 
 const tabs = [
@@ -140,6 +150,7 @@ export function AppShell({ children }: { children: ReactNode }) {
 function ProfilePanel({ profile, pro }: { profile: Profile; pro: boolean }) {
   const stats = useStats();
   const table = useTableStats();
+  const sound = useSoundOn();
   const pct = (n: number, of: number) => (of ? `${Math.round((n / of) * 100)}%` : "—");
   return (
     <div className="flex flex-col items-center text-center">
@@ -182,6 +193,29 @@ function ProfilePanel({ profile, pro }: { profile: Profile; pro: boolean }) {
           </span>
         </span>
         <ChevronRight className="size-4 shrink-0 text-muted-foreground" aria-hidden="true" />
+      </button>
+      <button
+        onClick={() => setSoundOn(!sound)}
+        role="switch"
+        aria-checked={sound}
+        className="mt-3 flex w-full items-center gap-3 rounded-2xl border bg-card p-4 text-left transition-colors active:bg-accent"
+      >
+        <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-background/40">
+          {sound ? (
+            <Volume2 className="size-4" aria-hidden="true" />
+          ) : (
+            <VolumeX className="size-4 text-muted-foreground" aria-hidden="true" />
+          )}
+        </span>
+        <span className="flex-1 text-sm font-semibold">Sonido y vibración</span>
+        <span
+          className={`flex h-6 w-10 items-center rounded-full p-0.5 transition-colors ${sound ? "bg-primary" : "bg-muted"}`}
+          aria-hidden="true"
+        >
+          <span
+            className={`size-5 rounded-full bg-white shadow transition-transform ${sound ? "translate-x-4" : ""}`}
+          />
+        </span>
       </button>
       <Button
         variant="glass"

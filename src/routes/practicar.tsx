@@ -7,6 +7,7 @@ import { PlayingCard } from "@/components/PlayingCard";
 import { Button } from "@/components/ui/button";
 import { type Card, hiLo, loadStats, saveStats, shoe, usePro, type Stats } from "@/lib/cards";
 import { openSheet } from "@/lib/sheets";
+import { cue } from "@/lib/sound";
 import { readLocal, writeLocal } from "@/lib/storage";
 
 export const Route = createFileRoute("/practicar")({
@@ -73,6 +74,7 @@ function Practice() {
 
   useEffect(() => {
     if (phase !== "deal") return;
+    cue("card");
     timer.current = window.setTimeout(() => {
       if (i + 1 >= n) setPhase("answer");
       else setI(i + 1);
@@ -91,6 +93,7 @@ function Practice() {
     setToday(next);
     writeLocal("cc-today", JSON.stringify({ d: new Date().toDateString(), n: next }));
     setPhase("result");
+    cue(ok ? "win" : "lose");
   }
 
   const ok = toNumber(guess) === truth;
