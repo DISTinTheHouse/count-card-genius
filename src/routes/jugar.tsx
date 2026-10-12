@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { Coins, Eye, EyeOff, Minus, Plus } from "lucide-react";
+import { Check, Coins, Eye, EyeOff, Lightbulb, Minus, Plus } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { Confetti } from "@/components/Confetti";
 import { PlayingCard } from "@/components/PlayingCard";
@@ -8,21 +8,31 @@ import { Button } from "@/components/ui/button";
 import {
   type Game,
   type Hand,
+  type Move,
   type Outcome,
   act,
   canDouble,
   canSplit,
+  canSurrender,
   deal,
+  insurancePayout,
+  insuranceCost,
+  insure,
+  isBlackjack,
   newGame,
   outcome,
   payout,
+  shouldInsure,
   stepBots,
   stepDealer,
+  strategy,
   trueCount,
   value,
 } from "@/lib/blackjack";
 import { START_CHIPS, fmt, setChips, useChips } from "@/lib/chips";
 import { useLocal, writeLocal } from "@/lib/storage";
+import { cue } from "@/lib/sound";
+import { recordDecision, recordHand } from "@/lib/table-stats";
 
 export const Route = createFileRoute("/jugar")({
   head: () => ({
@@ -56,7 +66,19 @@ const LABEL: Record<Outcome, string> = {
   push: "Empate",
   lose: "Pierdes",
   bust: "Te pasaste",
+  surrender: "Rendido",
 };
+
+const MOVE: Record<Move, string> = {
+  hit: "Pedir",
+  stand: "Plantarse",
+  double: "Doblar",
+  split: "Dividir",
+  surrender: "Rendirse",
+};
+
+/** Coach line under the table: was the last decision the basic-strategy one? */
+type Tip = { ok: boolean; text: string };
 
 function Play() {
   const chips = useChips();
@@ -65,6 +87,7 @@ function Play() {
   const [bet, setBet] = useState(100);
   const [bots, setBots] = useState(2);
   const [result, setResult] = useState<number | null>(null);
+  const [tip, setTip] = useState<Tip | null>(null);
   const showCount = useLocal(COUNT_HELP) !== "0";
 
   // Bots and dealer play themselves, one step at a time so cards are readable.
@@ -77,14 +100,25 @@ function Play() {
     return () => clearTimeout(t);
   }, [game]);
 
+  // A tick for every card that lands on the table.
+  const dealt =
+    game.dealer.length +
+    game.seats.reduce((a, s) => a + s.hands.reduce((b, h) => b + h.cards.length, 0), 0);
+  useEffect(() => {
+    if (dealt > 0) cue("card");
+  }, [dealt]);
+
   // Pay out once when the round ends.
   useEffect(() => {
     if (game.phase !== "done" || result !== null) return;
     const you = game.seats[0]!;
-    const back = you.hands.reduce((a, h) => a + payout(h, game.dealer), 0);
-    const staked = you.hands.reduce((a, h) => a + h.bet, 0);
+    const back =
+      you.hands.reduce((a, h) => a + payout(h, game.dealer), 0) + insurancePayout(you, game.dealer);
+    const staked = you.hands.reduce((a, h) => a + h.bet, 0) + (you.insurance ?? 0);
     setChips(balance + back);
     setResult(back - staked);
+    recordHand(back - staked, isBlackjack(you.hands[0]!), balance + back);
+    if (back !== staked) cue(back > staked ? "win" : "lose");
   }, [game, result, balance]);
 
   const you = game.seats[0];
@@ -93,23 +127,56 @@ function Play() {
   const inRound = game.phase !== "bet" && game.phase !== "done";
   const bettable = Math.min(bet, balance);
 
+  const allowed = current &&
+    you && {
+      double: canDouble(current) && balance >= current.bet,
+      split: canSplit(you, current) && balance >= current.bet,
+      surrender: canSurrender(you, current),
+    };
+
   function start() {
     if (bettable <= 0) return;
     setChips(balance - bettable);
     setResult(null);
+    setTip(null);
     setGame((g) => deal(g, bettable, bots));
   }
 
-  function double() {
-    if (!current || balance < current.bet) return;
-    setChips(balance - current.bet);
-    setGame((g) => act(g, "double"));
+  function play(move: Move) {
+    if (!current || !allowed || game.phase !== "player") return;
+    if ((move === "double" && !allowed.double) || (move === "split" && !allowed.split)) return;
+    const up = game.dealer[0]!;
+    const best = strategy(current, up, allowed);
+    recordDecision(move === best);
+    setTip(
+      move === best
+        ? { ok: true, text: "Jugada correcta" }
+        : {
+            ok: false,
+            text: `Lo correcto: ${MOVE[best]} con ${describe(current)} contra ${upName(up)}`,
+          },
+    );
+    if (move === "double" || move === "split") setChips(balance - current.bet);
+    setGame((g) => act(g, move));
   }
 
-  function split() {
-    if (!current || balance < current.bet) return;
-    setChips(balance - current.bet);
-    setGame((g) => act(g, "split"));
+  function insurance(take: boolean) {
+    const cost = insuranceCost(game);
+    if (take && balance < cost) return;
+    const ok = take === shouldInsure(game);
+    recordDecision(ok);
+    setTip(
+      ok
+        ? { ok: true, text: "Decisión correcta" }
+        : {
+            ok: false,
+            text: take
+              ? "El seguro solo conviene con cuenta real +3 o más"
+              : "Con cuenta real +3 o más, el seguro conviene",
+          },
+    );
+    if (take) setChips(balance - cost);
+    setGame((g) => insure(g, take));
   }
 
   return (
@@ -198,35 +265,82 @@ function Play() {
         <Confetti key={game.shoe.length} />
       )}
 
+      {tip && (
+        <p
+          key={tip.text + (you?.hands.length ?? 0) + (current?.cards.length ?? 0)}
+          className={`mt-2 flex animate-rise items-center justify-center gap-1.5 text-center text-xs font-semibold ${tip.ok ? "text-success" : "text-gold"}`}
+        >
+          {tip.ok ? (
+            <Check className="size-3.5 shrink-0" aria-hidden="true" />
+          ) : (
+            <Lightbulb className="size-3.5 shrink-0" aria-hidden="true" />
+          )}
+          {tip.text}
+        </p>
+      )}
+
       {/* Actions */}
-      {game.phase === "player" && current && (
-        <div className="mt-3 grid grid-cols-2 gap-2">
-          <Button variant="gold" size="xl" onClick={() => setGame((g) => act(g, "hit"))}>
-            Pedir
-          </Button>
-          <Button variant="glass" size="xl" onClick={() => setGame((g) => act(g, "stand"))}>
-            Plantarse
-          </Button>
-          <Button
-            variant="glass"
-            size="xl"
-            disabled={!canDouble(current) || balance < current.bet}
-            onClick={double}
-          >
-            Doblar
-          </Button>
-          <Button
-            variant="glass"
-            size="xl"
-            disabled={!canSplit(you!, current) || balance < current.bet}
-            onClick={split}
-          >
-            Dividir
-          </Button>
+      {game.phase === "insurance" && (
+        <div className="mt-3 rounded-3xl border bg-card p-4 text-center">
+          <p className="text-sm">
+            El crupier muestra un As. ¿Seguro por{" "}
+            <b className="text-foreground">{fmt(insuranceCost(game))}</b>?
+          </p>
+          <p className="mt-1 text-xs text-muted-foreground">Paga 2 a 1 si tiene Blackjack.</p>
+          <div className="mt-3 grid grid-cols-2 gap-2">
+            <Button
+              variant="glass"
+              size="xl"
+              disabled={balance < insuranceCost(game)}
+              onClick={() => insurance(true)}
+            >
+              Asegurar
+            </Button>
+            <Button variant="gold" size="xl" onClick={() => insurance(false)}>
+              No, gracias
+            </Button>
+          </div>
         </div>
       )}
 
-      {inRound && game.phase !== "player" && (
+      {game.phase === "player" && current && allowed && (
+        <>
+          <div className="mt-3 grid grid-cols-2 gap-2">
+            <Button variant="gold" size="xl" onClick={() => play("hit")}>
+              Pedir
+            </Button>
+            <Button variant="glass" size="xl" onClick={() => play("stand")}>
+              Plantarse
+            </Button>
+            <Button
+              variant="glass"
+              size="xl"
+              disabled={!allowed.double}
+              onClick={() => play("double")}
+            >
+              Doblar
+            </Button>
+            <Button
+              variant="glass"
+              size="xl"
+              disabled={!allowed.split}
+              onClick={() => play("split")}
+            >
+              Dividir
+            </Button>
+          </div>
+          {allowed.surrender && (
+            <button
+              onClick={() => play("surrender")}
+              className="mx-auto mt-2 block text-xs font-semibold text-muted-foreground underline underline-offset-2"
+            >
+              Rendirse y recuperar la mitad
+            </button>
+          )}
+        </>
+      )}
+
+      {inRound && game.phase !== "player" && game.phase !== "insurance" && (
         <p className="mt-4 text-center text-sm text-muted-foreground">
           {game.phase === "bots" ? "Juegan los bots…" : "Juega el crupier…"}
         </p>
@@ -267,7 +381,10 @@ function Play() {
               {CHIPS.map((v) => (
                 <button
                   key={v}
-                  onClick={() => setBet((b) => Math.min(b + v, balance))}
+                  onClick={() => {
+                    cue("chip");
+                    setBet((b) => Math.min(b + v, balance));
+                  }}
                   disabled={balance - bettable < v}
                   className={`flex size-12 items-center justify-center rounded-full border-4 border-dashed border-white/40 text-[0.7rem] font-extrabold shadow-playing transition-transform active:scale-90 disabled:opacity-30 ${CHIP_STYLE[v]}`}
                 >
@@ -299,10 +416,18 @@ function Play() {
 }
 
 const signed = (n: number) => (n > 0 ? `+${n}` : String(n));
+const upName = (c: Game["dealer"][number]) => (c.rank === "A" ? "As" : String(value([c]).total));
+function describe(h: Hand) {
+  const [a, b] = h.cards;
+  if (h.cards.length === 2 && value([a!]).total === value([b!]).total)
+    return a!.rank === "A" ? "par de Ases" : `par de ${value([a!]).total}`;
+  const { total, soft } = value(h.cards);
+  return soft ? `${total} suave` : String(total);
+}
 const tone = (o: Outcome) =>
   o === "blackjack" || o === "win"
     ? "text-success"
-    : o === "push"
+    : o === "push" || o === "surrender"
       ? "text-muted-foreground"
       : "text-destructive";
 

@@ -1,6 +1,15 @@
 import { Link, useRouterState } from "@tanstack/react-router";
 import { useEffect, type ReactNode } from "react";
-import { ChevronRight, Coins, Crown, GraduationCap, LogOut, Spade } from "lucide-react";
+import {
+  ChevronRight,
+  Coins,
+  Crown,
+  GraduationCap,
+  LogOut,
+  Spade,
+  Volume2,
+  VolumeX,
+} from "lucide-react";
 import { Logo } from "@/components/Logo";
 import { ProPanel } from "@/components/ProPanel";
 import { Sheet } from "@/components/Sheet";
@@ -10,6 +19,8 @@ import { usePro, useStats } from "@/lib/cards";
 import { START_CHIPS, fmt, setChips, short, useChips } from "@/lib/chips";
 import { saveProfile, useProfile, type Profile } from "@/lib/profile";
 import { openSheet, useSheet } from "@/lib/sheets";
+import { setSoundOn, useSoundOn } from "@/lib/sound";
+import { useTableStats } from "@/lib/table-stats";
 
 const tabs = [
   { to: "/", label: "Entrenar", icon: GraduationCap, paths: ["/", "/practicar"] },
@@ -138,7 +149,9 @@ export function AppShell({ children }: { children: ReactNode }) {
 
 function ProfilePanel({ profile, pro }: { profile: Profile; pro: boolean }) {
   const stats = useStats();
-  const accuracy = stats.rounds ? Math.round((stats.correct / stats.rounds) * 100) : 0;
+  const table = useTableStats();
+  const sound = useSoundOn();
+  const pct = (n: number, of: number) => (of ? `${Math.round((n / of) * 100)}%` : "—");
   return (
     <div className="flex flex-col items-center text-center">
       <span className="flex size-16 items-center justify-center rounded-full bg-gold font-display text-2xl text-primary-foreground">
@@ -148,19 +161,25 @@ function ProfilePanel({ profile, pro }: { profile: Profile; pro: boolean }) {
       <p className="text-sm text-muted-foreground">
         {profile.guest ? "Invitado" : "Perfil local"} · {pro ? "PRO" : "Gratis"}
       </p>
-      <div className="mt-6 grid w-full grid-cols-2 gap-3">
-        <div className="rounded-2xl border bg-card p-4">
-          <p className="font-display text-2xl">{stats.rounds}</p>
-          <p className="text-xs text-muted-foreground">Rondas</p>
-        </div>
-        <div className="rounded-2xl border bg-card p-4">
-          <p className="font-display text-2xl">{stats.rounds ? `${accuracy}%` : "—"}</p>
-          <p className="text-xs text-muted-foreground">Precisión</p>
-        </div>
-      </div>
+      <StatGroup
+        title="Práctica de conteo"
+        items={[
+          [String(stats.rounds), "Rondas"],
+          [pct(stats.correct, stats.rounds), "Precisión"],
+        ]}
+      />
+      <StatGroup
+        title="Mesa"
+        items={[
+          [String(table.hands), "Manos"],
+          [pct(table.won, table.hands), "Ganadas"],
+          [pct(table.correct, table.decisions), "Jugadas correctas"],
+          [String(table.bestStreak), "Mejor racha"],
+        ]}
+      />
       <button
         onClick={() => openSheet("pro")}
-        className="mt-3 flex w-full items-center gap-3 rounded-2xl border bg-card p-4 text-left transition-colors active:bg-accent"
+        className="mt-5 flex w-full items-center gap-3 rounded-2xl border bg-card p-4 text-left transition-colors active:bg-accent"
       >
         <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-gold">
           <Crown className="size-4 text-primary-foreground" aria-hidden="true" />
@@ -174,6 +193,29 @@ function ProfilePanel({ profile, pro }: { profile: Profile; pro: boolean }) {
           </span>
         </span>
         <ChevronRight className="size-4 shrink-0 text-muted-foreground" aria-hidden="true" />
+      </button>
+      <button
+        onClick={() => setSoundOn(!sound)}
+        role="switch"
+        aria-checked={sound}
+        className="mt-3 flex w-full items-center gap-3 rounded-2xl border bg-card p-4 text-left transition-colors active:bg-accent"
+      >
+        <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-background/40">
+          {sound ? (
+            <Volume2 className="size-4" aria-hidden="true" />
+          ) : (
+            <VolumeX className="size-4 text-muted-foreground" aria-hidden="true" />
+          )}
+        </span>
+        <span className="flex-1 text-sm font-semibold">Sonido y vibración</span>
+        <span
+          className={`flex h-6 w-10 items-center rounded-full p-0.5 transition-colors ${sound ? "bg-primary" : "bg-muted"}`}
+          aria-hidden="true"
+        >
+          <span
+            className={`size-5 rounded-full bg-white shadow transition-transform ${sound ? "translate-x-4" : ""}`}
+          />
+        </span>
       </button>
       <Button
         variant="glass"
@@ -195,5 +237,21 @@ function ProfilePanel({ profile, pro }: { profile: Profile; pro: boolean }) {
         Política de privacidad
       </Link>
     </div>
+  );
+}
+
+function StatGroup({ title, items }: { title: string; items: [string, string][] }) {
+  return (
+    <section className="mt-5 w-full text-left">
+      <h3 className="mb-2 text-xs font-semibold text-muted-foreground">{title}</h3>
+      <div className="grid grid-cols-2 gap-3">
+        {items.map(([value, label]) => (
+          <div key={label} className="rounded-2xl border bg-card p-4 text-center">
+            <p className="font-display text-2xl">{value}</p>
+            <p className="text-xs text-muted-foreground">{label}</p>
+          </div>
+        ))}
+      </div>
+    </section>
   );
 }

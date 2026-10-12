@@ -4,11 +4,14 @@ import {
   type Game,
   act,
   deal,
+  insurancePayout,
+  insure,
   newGame,
   outcome,
   payout,
   stepBots,
   stepDealer,
+  strategy,
   value,
 } from "@/lib/blackjack";
 
@@ -40,7 +43,8 @@ describe("blackjack", () => {
     let g: Game = deal(newGame(), 100, 4);
     expect(g.seats).toHaveLength(5);
     for (let i = 0; i < 200 && g.phase !== "done"; i++) {
-      if (g.phase === "player") g = act(g, "stand");
+      if (g.phase === "insurance") g = insure(g, false);
+      else if (g.phase === "player") g = act(g, "stand");
       else if (g.phase === "bots") g = stepBots(g);
       else if (g.phase === "dealer") g = stepDealer(g);
     }
@@ -51,11 +55,48 @@ describe("blackjack", () => {
   it("keeps the running count equal to the visible cards", () => {
     let g: Game = deal(newGame(), 100, 2);
     while (g.phase !== "done") {
-      g = g.phase === "player" ? act(g, "stand") : g.phase === "bots" ? stepBots(g) : stepDealer(g);
+      g =
+        g.phase === "insurance"
+          ? insure(g, false)
+          : g.phase === "player"
+            ? act(g, "stand")
+            : g.phase === "bots"
+              ? stepBots(g)
+              : stepDealer(g);
     }
     const seen = [...g.seats.flatMap((s) => s.hands.flatMap((x) => x.cards)), ...g.dealer];
     const hilo = (r: string) =>
       "23456".includes(r) && r !== "10" ? 1 : "789".includes(r) ? 0 : -1;
     expect(g.running).toBe(seen.reduce((a, x) => a + hilo(x.rank), 0));
+  });
+
+  it("follows basic strategy for 6 decks, S17, DAS, late surrender", () => {
+    const all = { double: true, split: true, surrender: true };
+    const best = (ranks: Card["rank"][], up: Card["rank"], allowed = all) =>
+      strategy({ ...h(ranks), done: false }, c(up), allowed);
+    expect(best(["10", "6"], "10")).toBe("surrender");
+    expect(best(["10", "6"], "10", { ...all, surrender: false })).toBe("hit");
+    expect(best(["10", "5"], "9")).toBe("hit");
+    expect(best(["10", "2"], "4")).toBe("stand");
+    expect(best(["10", "2"], "3")).toBe("hit");
+    expect(best(["6", "5"], "10")).toBe("double");
+    expect(best(["6", "5"], "A")).toBe("hit");
+    expect(best(["A", "7"], "2")).toBe("stand");
+    expect(best(["A", "7"], "6")).toBe("double");
+    expect(best(["A", "7"], "9")).toBe("hit");
+    expect(best(["A", "8"], "6")).toBe("stand");
+    expect(best(["8", "8"], "A")).toBe("split");
+    expect(best(["9", "9"], "7")).toBe("stand");
+    expect(best(["5", "5"], "6")).toBe("double");
+    expect(best(["K", "Q"], "6")).toBe("stand");
+    expect(best(["A", "A"], "10")).toBe("split");
+  });
+
+  it("settles surrender and insurance", () => {
+    expect(payout({ ...h(["10", "6"]), surrendered: true }, [c("10"), c("7")])).toBe(50);
+    expect(outcome({ ...h(["10", "6"]), surrendered: true }, [c("10"), c("7")])).toBe("surrender");
+    const seat = { name: "Tú", bot: false, hands: [h(["10", "9"])], active: 0, insurance: 50 };
+    expect(insurancePayout(seat, [c("A"), c("K")])).toBe(150);
+    expect(insurancePayout(seat, [c("A"), c("7")])).toBe(0);
   });
 });
