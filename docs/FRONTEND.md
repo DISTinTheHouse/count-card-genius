@@ -21,6 +21,7 @@ Principio: **ligera, simple, sin complicar al usuario.** Antes de añadir una li
 | Páginas | `src/routes/` (`index` + `practicar` = pestaña Entrenar, `jugar` = pestaña Jugar; `pro` solo para enlaces antiguos) |
 | Reglas Hi-Lo, zapato, PRO, estadísticas | `src/lib/cards.ts` |
 | Perfil local | `src/lib/profile.ts` |
+| Apps de iOS y Android | `capacitor.config.ts`, `android/`, `ios/` (ver `docs/MOBILE.md`) |
 | localStorage reactivo | `src/lib/storage.ts` (`useLocal`, `writeLocal`) |
 
 ## Flujo
