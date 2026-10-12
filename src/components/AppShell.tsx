@@ -187,6 +187,13 @@ function ProfilePanel({ profile, pro }: { profile: Profile; pro: boolean }) {
         <LogOut aria-hidden="true" />
         Cambiar de usuario
       </Button>
+      <Link
+        to="/privacidad"
+        onClick={() => openSheet(null)}
+        className="mt-4 text-xs text-muted-foreground underline underline-offset-2"
+      >
+        Política de privacidad
+      </Link>
     </div>
   );
 }
