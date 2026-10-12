@@ -41,6 +41,34 @@ Repite `npm run build:mobile` cada vez que cambie el código web.
 3. Sube la versión en *General* (Version 1.0, Build 1, súbelo en cada envío).
 4. *Product → Archive* → *Distribute App* → *App Store Connect*. Luego aparece en TestFlight y desde App Store Connect la envías a revisión.
 
+### iOS sin Mac: GitHub compila y sube a TestFlight
+
+El flujo `.github/workflows/ios-testflight.yml` compila la app en una Mac de GitHub y la sube a TestFlight. Se lanza a mano y cada ejecución sube una build nueva (el número de build es el número de ejecución).
+
+**Una sola vez:**
+
+1. **Bundle ID:** en [developer.apple.com](https://developer.apple.com/account/resources/identifiers/list) → *Identifiers* → **+** → *App IDs* → *App*. Descripción `CuentaCartas`, Bundle ID *Explicit* `com.cuentacartas.app`.
+2. **La app en App Store Connect:** [appstoreconnect.apple.com](https://appstoreconnect.apple.com) → *Apps* → **+** → *Nueva app*. Plataforma iOS, nombre `CuentaCartas` (si ya está tomado, prueba otro como "CuentaCartas Blackjack"), idioma Español, el Bundle ID del paso 1 y SKU `cuentacartas`.
+3. **Llave de API:** App Store Connect → *Usuarios y acceso* → *Integraciones* → *App Store Connect API* → *Llaves del equipo* → **+**. Nombre `GitHub`, acceso **Administrador** (lo necesita para crear el certificado de distribución en la nube). Descarga el archivo `.p8` (solo se puede bajar una vez) y anota el **Key ID** y el **Issuer ID** que aparecen en esa página.
+4. **Team ID:** en [developer.apple.com/account](https://developer.apple.com/account) → *Membership details* → *Team ID*.
+5. **Secretos en GitHub:** en el repo → *Settings* → *Secrets and variables* → *Actions* → *New repository secret*, crea estos cuatro:
+
+| Secreto | Valor |
+| --- | --- |
+| `ASC_KEY_ID` | Key ID de la llave |
+| `ASC_ISSUER_ID` | Issuer ID |
+| `ASC_KEY_P8` | El contenido completo del `.p8` (ábrelo con el Bloc de notas y pega todo, incluidas las líneas `BEGIN` y `END`) |
+| `APPLE_TEAM_ID` | Team ID |
+
+**Cada vez que quieras una build nueva:**
+
+1. GitHub → *Actions* → **iOS a TestFlight** → *Run workflow*. Tarda unos 15 a 25 minutos.
+2. En App Store Connect → tu app → *TestFlight* aparece la build "Procesando"; Apple tarda unos minutos más.
+3. La primera vez, en *TestFlight* → *Pruebas internas* crea un grupo y agrégate con tu Apple ID.
+4. En el iPhone instala la app **TestFlight** de la App Store, acepta la invitación que llega a tu correo y toca *Instalar*.
+
+Expo Orbit no sirve para esta app: instala builds de Expo/EAS y archivos ya firmados, y esta app se compila con Capacitor.
+
 ### Android (en Android Studio)
 
 1. Prueba con ▶ en un emulador o teléfono.
