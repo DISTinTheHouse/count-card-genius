@@ -6,6 +6,7 @@ import {
   Crown,
   GraduationCap,
   LogOut,
+  MessageSquare,
   Spade,
   Volume2,
   VolumeX,
@@ -21,6 +22,11 @@ import { saveProfile, useProfile, type Profile } from "@/lib/profile";
 import { openSheet, useSheet } from "@/lib/sheets";
 import { setSoundOn, useSoundOn } from "@/lib/sound";
 import { useTableStats } from "@/lib/table-stats";
+
+// Beta feedback goes straight to the developer's inbox.
+const FEEDBACK = `mailto:ufkwear@gmail.com?subject=${encodeURIComponent(
+  "CuentaCartas beta: comentario",
+)}&body=${encodeURIComponent("¿Qué mejorarías o qué falló?\n\n")}`;
 
 const tabs = [
   { to: "/", label: "Entrenar", icon: GraduationCap, paths: ["/", "/practicar"] },
@@ -217,6 +223,21 @@ function ProfilePanel({ profile, pro }: { profile: Profile; pro: boolean }) {
           />
         </span>
       </button>
+      <a
+        href={FEEDBACK}
+        className="mt-3 flex w-full items-center gap-3 rounded-2xl border bg-card p-4 text-left transition-colors active:bg-accent"
+      >
+        <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-background/40">
+          <MessageSquare className="size-4" aria-hidden="true" />
+        </span>
+        <span className="min-w-0 flex-1">
+          <span className="block text-sm font-semibold">Enviar comentario</span>
+          <span className="block text-xs text-muted-foreground">
+            Cuéntanos qué mejorar o qué falló
+          </span>
+        </span>
+        <ChevronRight className="size-4 shrink-0 text-muted-foreground" aria-hidden="true" />
+      </a>
       <Button
         variant="glass"
         size="xl"
