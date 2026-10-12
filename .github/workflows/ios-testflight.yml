@@ -1,0 +1,94 @@
+# Builds the iOS app on a GitHub-hosted Mac and uploads it to TestFlight, so no Mac
+# is needed locally. Run it by hand: Actions → "iOS a TestFlight" → Run workflow.
+# Setup (App Store Connect API key + 4 secrets) is in docs/MOBILE.md.
+name: iOS a TestFlight
+
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: ios-testflight
+  cancel-in-progress: false
+
+jobs:
+  testflight:
+    runs-on: macos-26
+    timeout-minutes: 60
+    env:
+      ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+      ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+      APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Revisar secretos
+        run: |
+          for s in ASC_KEY_ID ASC_ISSUER_ID APPLE_TEAM_ID; do
+            [ -n "${!s}" ] || { echo "::error::Falta el secreto $s (ver docs/MOBILE.md)"; exit 1; }
+          done
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      # bun.lock points one package at Lovable's private mirror, so install from npm.
+      - name: Instalar dependencias
+        run: npm install --legacy-peer-deps --no-package-lock --no-audit --no-fund
+
+      - name: Build web y copia a iOS
+        run: npm run build:mobile
+
+      - name: Llave de App Store Connect
+        env:
+          ASC_KEY_P8: ${{ secrets.ASC_KEY_P8 }}
+        run: |
+          [ -n "$ASC_KEY_P8" ] || { echo "::error::Falta el secreto ASC_KEY_P8"; exit 1; }
+          printf '%s\n' "$ASC_KEY_P8" > "$RUNNER_TEMP/AuthKey.p8"
+
+      # Automatic signing with the API key: Xcode creates or reuses the distribution
+      # certificate and profile in Apple's cloud, so nothing is stored here.
+      - name: Compilar y archivar
+        working-directory: ios/App
+        run: |
+          xcodebuild -version
+          xcodebuild archive \
+            -project App.xcodeproj \
+            -scheme App \
+            -configuration Release \
+            -destination 'generic/platform=iOS' \
+            -archivePath "$RUNNER_TEMP/App.xcarchive" \
+            -allowProvisioningUpdates \
+            -authenticationKeyPath "$RUNNER_TEMP/AuthKey.p8" \
+            -authenticationKeyID "$ASC_KEY_ID" \
+            -authenticationKeyIssuerID "$ASC_ISSUER_ID" \
+            DEVELOPMENT_TEAM="$APPLE_TEAM_ID" \
+            CODE_SIGN_STYLE=Automatic \
+            CURRENT_PROJECT_VERSION="${{ github.run_number }}"
+
+      - name: Subir a TestFlight
+        run: |
+          cat > "$RUNNER_TEMP/export.plist" <<PLIST
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+            <key>method</key><string>app-store-connect</string>
+            <key>destination</key><string>upload</string>
+            <key>teamID</key><string>$APPLE_TEAM_ID</string>
+            <key>signingStyle</key><string>automatic</string>
+            <key>manageAppVersionAndBuildNumber</key><false/>
+          </dict>
+          </plist>
+          PLIST
+          xcodebuild -exportArchive \
+            -archivePath "$RUNNER_TEMP/App.xcarchive" \
+            -exportOptionsPlist "$RUNNER_TEMP/export.plist" \
+            -exportPath "$RUNNER_TEMP/export" \
+            -allowProvisioningUpdates \
+            -authenticationKeyPath "$RUNNER_TEMP/AuthKey.p8" \
+            -authenticationKeyID "$ASC_KEY_ID" \
+            -authenticationKeyIssuerID "$ASC_ISSUER_ID"
+
+      - name: Borrar la llave
+        if: always()
+        run: rm -f "$RUNNER_TEMP/AuthKey.p8"
