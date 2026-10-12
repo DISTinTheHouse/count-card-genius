@@ -3,14 +3,29 @@ import { type Card, hiLo, shoe } from "./cards";
 // Pure Blackjack engine. Every action takes a Game and returns a new one, so the
 // UI only renders state and schedules the next step. Rules: 6 decks, Blackjack
 // pays 3:2, dealer stands on all 17s and peeks for Blackjack, double on any two
-// cards, one split per hand (split aces get one card each).
+// cards (also after a split), one split per hand (split aces get one card each),
+// insurance when the dealer shows an Ace, late surrender on the first two cards.
 
 export const DECKS = 6;
 const RESHUFFLE_AT = DECKS * 52 * 0.25;
 
-export type Hand = { cards: Card[]; bet: number; doubled: boolean; done: boolean; split: boolean };
-export type Seat = { name: string; bot: boolean; hands: Hand[]; active: number };
-export type Phase = "bet" | "player" | "bots" | "dealer" | "done";
+export type Hand = {
+  cards: Card[];
+  bet: number;
+  doubled: boolean;
+  done: boolean;
+  split: boolean;
+  surrendered?: boolean;
+};
+/** `insurance` = chips staked on insurance (0 = declined). */
+export type Seat = {
+  name: string;
+  bot: boolean;
+  hands: Hand[];
+  active: number;
+  insurance?: number;
+};
+export type Phase = "bet" | "insurance" | "player" | "bots" | "dealer" | "done";
 export type Game = {
   shoe: Card[];
   /** Hi-Lo running count of every face-up card since the last shuffle. */
@@ -20,7 +35,8 @@ export type Game = {
   holeHidden: boolean;
   phase: Phase;
 };
-export type Outcome = "blackjack" | "win" | "push" | "lose" | "bust";
+export type Outcome = "blackjack" | "win" | "push" | "lose" | "bust" | "surrender";
+export type Move = "hit" | "stand" | "double" | "split" | "surrender";
 
 export function newGame(): Game {
   return { shoe: shoe(DECKS), running: 0, seats: [], dealer: [], holeHidden: true, phase: "bet" };
@@ -48,6 +64,10 @@ export const isBlackjack = (h: Hand) =>
 export const canDouble = (h: Hand) => h.cards.length === 2 && !h.done;
 export const canSplit = (s: Seat, h: Hand) =>
   s.hands.length === 1 && h.cards.length === 2 && cardValue(h.cards[0]!) === cardValue(h.cards[1]!);
+export const canSurrender = (s: Seat, h: Hand) =>
+  s.hands.length === 1 && h.cards.length === 2 && !h.done;
+/** Insurance costs half the bet. */
+export const insuranceCost = (g: Game) => Math.floor(g.seats[0]!.hands[0]!.bet / 2);
 
 export function trueCount(g: Game) {
   return g.running / Math.max(g.shoe.length / 52, 0.5);
@@ -90,7 +110,23 @@ export function deal(prev: Game, bet: number, bots: number): Game {
   }
   for (const s of g.seats) if (isBlackjack(s.hands[0]!)) s.hands[0]!.done = true;
 
-  // Dealer peeks when showing an Ace or a ten.
+  if (g.dealer[0]!.rank === "A") {
+    g.phase = "insurance";
+    return g;
+  }
+  return peek(g);
+}
+
+/** Take or decline insurance (the UI already took the chips), then the dealer peeks. */
+export function insure(prev: Game, take: boolean): Game {
+  if (prev.phase !== "insurance") return prev;
+  const g = clone(prev);
+  g.seats[0]!.insurance = take ? insuranceCost(g) : 0;
+  return peek(g);
+}
+
+// Dealer peeks when showing an Ace or a ten.
+function peek(g: Game): Game {
   if (cardValue(g.dealer[0]!) >= 10 && value(g.dealer).total === 21) return reveal(g, "done");
   g.phase = g.seats[0]!.hands[0]!.done ? "bots" : "player";
   return g;
@@ -113,7 +149,7 @@ function finish(g: Game, s: Seat) {
 }
 
 /** Player actions on seat 0. */
-export function act(prev: Game, action: "hit" | "stand" | "double" | "split"): Game {
+export function act(prev: Game, action: Move): Game {
   const g = clone(prev);
   const s = g.seats[0]!;
   const h = s.hands[s.active]!;
@@ -122,8 +158,12 @@ export function act(prev: Game, action: "hit" | "stand" | "double" | "split"): G
   return g;
 }
 
-function apply(g: Game, s: Seat, h: Hand, action: "hit" | "stand" | "double" | "split") {
-  if (action === "hit") {
+function apply(g: Game, s: Seat, h: Hand, action: Move) {
+  if (action === "surrender") {
+    if (!canSurrender(s, h)) return;
+    h.surrendered = true;
+    finish(g, s);
+  } else if (action === "hit") {
     h.cards.push(draw(g));
     if (value(h.cards).total >= 21) finish(g, s);
   } else if (action === "stand") finish(g, s);
@@ -145,18 +185,59 @@ function apply(g: Game, s: Seat, h: Hand, action: "hit" | "stand" | "double" | "
   }
 }
 
-/** Simplified basic strategy for bots. */
-function botMove(h: Hand, up: Card): "hit" | "stand" | "double" {
+/**
+ * Basic strategy for these rules (6 decks, dealer stands on soft 17, double after
+ * split, late surrender). `allowed` says which optional moves are possible right now;
+ * when the best one isn't, it falls back to the next best.
+ */
+export function strategy(
+  h: Hand,
+  up: Card,
+  allowed: { double: boolean; split: boolean; surrender: boolean },
+): Move {
   const { total, soft } = value(h.cards);
   const u = cardValue(up);
+  const pair = h.cards.length === 2 && cardValue(h.cards[0]!) === cardValue(h.cards[1]!);
+  const dbl = (ok: boolean, otherwise: Move): Move => (ok && allowed.double ? "double" : otherwise);
+
   if (total >= 21) return "stand";
-  if (soft) return total >= 19 || (total === 18 && u <= 8) ? "stand" : "hit";
-  if (h.cards.length === 2 && (total === 11 || (total === 10 && u <= 9))) return "double";
+  if (allowed.surrender && !soft && !pair) {
+    if ((total === 16 && u >= 9) || (total === 15 && u === 10)) return "surrender";
+  }
+  if (pair && allowed.split) {
+    const r = cardValue(h.cards[0]!);
+    const split =
+      r === 11 ||
+      r === 8 ||
+      (r === 9 && u !== 7 && u <= 9) ||
+      (r === 7 && u <= 7) ||
+      (r === 6 && u <= 6) ||
+      (r === 4 && (u === 5 || u === 6)) ||
+      ((r === 2 || r === 3) && u <= 7);
+    if (split) return "split";
+  }
+  if (soft) {
+    if (total >= 19) return "stand";
+    if (total === 18) return u <= 6 ? dbl(u >= 3, "stand") : u <= 8 ? "stand" : "hit";
+    if (total === 17) return dbl(u >= 3 && u <= 6, "hit");
+    if (total >= 15) return dbl(u >= 4 && u <= 6, "hit");
+    if (total >= 13) return dbl(u >= 5 && u <= 6, "hit");
+    return "hit";
+  }
   if (total >= 17) return "stand";
   if (total >= 13) return u <= 6 ? "stand" : "hit";
   if (total === 12) return u >= 4 && u <= 6 ? "stand" : "hit";
+  if (total === 11) return dbl(u <= 10, "hit");
+  if (total === 10) return dbl(u <= 9, "hit");
+  if (total === 9) return dbl(u >= 3 && u <= 6, "hit");
   return "hit";
 }
+
+/** Insurance only pays off with a true count of +3 or more. */
+export const shouldInsure = (g: Game) => trueCount(g) >= 3;
+
+const botMove = (h: Hand, up: Card) =>
+  strategy(h, up, { double: canDouble(h), split: false, surrender: false });
 
 /** One bot action, or move on to the dealer when every bot is done. */
 export function stepBots(prev: Game): Game {
@@ -172,7 +253,7 @@ export function stepBots(prev: Game): Game {
 export function stepDealer(prev: Game): Game {
   const g = clone(prev);
   const live = g.seats.some((s) =>
-    s.hands.some((h) => value(h.cards).total <= 21 && !isBlackjack(h)),
+    s.hands.some((h) => value(h.cards).total <= 21 && !isBlackjack(h) && !h.surrendered),
   );
   if (live && value(g.dealer).total < 17) g.dealer.push(draw(g));
   else g.phase = "done";
@@ -183,6 +264,7 @@ export function outcome(h: Hand, dealer: Card[]): Outcome {
   const p = value(h.cards).total;
   const d = value(dealer).total;
   const dealerBJ = dealer.length === 2 && d === 21;
+  if (h.surrendered) return "surrender";
   if (p > 21) return "bust";
   if (isBlackjack(h)) return dealerBJ ? "push" : "blackjack";
   if (dealerBJ) return "lose";
@@ -193,5 +275,12 @@ export function outcome(h: Hand, dealer: Card[]): Outcome {
 /** Chips returned to the player for a hand (the bet was already taken). */
 export function payout(h: Hand, dealer: Card[]): number {
   const o = outcome(h, dealer);
+  if (o === "surrender") return Math.floor(h.bet / 2);
   return o === "blackjack" ? h.bet * 2.5 : o === "win" ? h.bet * 2 : o === "push" ? h.bet : 0;
+}
+
+/** Insurance pays 2:1 (stake back + 2x) when the dealer has Blackjack. */
+export function insurancePayout(s: Seat, dealer: Card[]): number {
+  const dealerBJ = dealer.length === 2 && value(dealer).total === 21;
+  return dealerBJ ? (s.insurance ?? 0) * 3 : 0;
 }

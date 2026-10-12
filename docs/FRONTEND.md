@@ -14,7 +14,7 @@ Principio: **ligera, simple, sin complicar al usuario.** Antes de añadir una li
 | Hojas globales (PRO, perfil) | `src/lib/sheets.ts` → `openSheet("pro")` |
 | Contenido de lecciones | `src/lib/lessons.ts` (solo datos) |
 | Motor de Blackjack (reglas, bots, crupier, pagos) | `src/lib/blackjack.ts` (funciones puras, tests en `src/test/blackjack.test.ts`) |
-| Mesa de juego | `src/routes/jugar.tsx` |
+| Mesa de juego (con coach: tras cada jugada dice si era la correcta) | `src/routes/jugar.tsx` |
 | Fichas ficticias | `src/lib/chips.ts` (10,000 de bienvenida, recarga gratis en 0) |
 | Pantalla de bienvenida | `src/components/Welcome.tsx` |
 | Carta | `src/components/PlayingCard.tsx` (memo, solo CSS) |
@@ -41,6 +41,7 @@ Principio: **ligera, simple, sin complicar al usuario.** Antes de añadir una li
 | `cuentacartas-lessons-read` | lecciones abiertas |
 | `cuentacartas-chips` | saldo de fichas (sin clave = aún no recibió el bono) |
 | `cuentacartas-count-help` | `"0"` = ocultar la cuenta en la mesa |
+| `cuentacartas-table-stats` | estadísticas de mesa: manos, ganadas, jugadas correctas según estrategia básica, mejor racha (`src/lib/table-stats.ts`) |
 
 Lee y escribe siempre con `useLocal` / `writeLocal`, así todos los componentes se actualizan a la vez. Cuando llegue el backend, cambia la implementación de `useProfile` y `usePro` sin cambiar su forma.
 
