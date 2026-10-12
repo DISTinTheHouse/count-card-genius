@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as JugarRouteImport } from './routes/jugar'
 import { Route as PracticarRouteImport } from './routes/practicar'
+import { Route as PrivacidadRouteImport } from './routes/privacidad'
 import { Route as ProRouteImport } from './routes/pro'
 
 const IndexRoute = IndexRouteImport.update({
@@ -29,6 +30,11 @@ const PracticarRoute = PracticarRouteImport.update({
   path: '/practicar',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PrivacidadRoute = PrivacidadRouteImport.update({
+  id: '/privacidad',
+  path: '/privacidad',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ProRoute = ProRouteImport.update({
   id: '/pro',
   path: '/pro',
@@ -39,12 +45,14 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/jugar': typeof JugarRoute
   '/practicar': typeof PracticarRoute
+  '/privacidad': typeof PrivacidadRoute
   '/pro': typeof ProRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/jugar': typeof JugarRoute
   '/practicar': typeof PracticarRoute
+  '/privacidad': typeof PrivacidadRoute
   '/pro': typeof ProRoute
 }
 export interface FileRoutesById {
@@ -52,20 +60,22 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/jugar': typeof JugarRoute
   '/practicar': typeof PracticarRoute
+  '/privacidad': typeof PrivacidadRoute
   '/pro': typeof ProRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/jugar' | '/practicar' | '/pro'
+  fullPaths: '/' | '/jugar' | '/practicar' | '/privacidad' | '/pro'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/jugar' | '/practicar' | '/pro'
-  id: '__root__' | '/' | '/jugar' | '/practicar' | '/pro'
+  to: '/' | '/jugar' | '/practicar' | '/privacidad' | '/pro'
+  id: '__root__' | '/' | '/jugar' | '/practicar' | '/privacidad' | '/pro'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   JugarRoute: typeof JugarRoute
   PracticarRoute: typeof PracticarRoute
+  PrivacidadRoute: typeof PrivacidadRoute
   ProRoute: typeof ProRoute
 }
 
@@ -92,6 +102,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PracticarRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/privacidad': {
+      id: '/privacidad'
+      path: '/privacidad'
+      fullPath: '/privacidad'
+      preLoaderRoute: typeof PrivacidadRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/pro': {
       id: '/pro'
       path: '/pro'
@@ -106,6 +123,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   JugarRoute: JugarRoute,
   PracticarRoute: PracticarRoute,
+  PrivacidadRoute: PrivacidadRoute,
   ProRoute: ProRoute,
 }
 export const routeTree = rootRouteImport

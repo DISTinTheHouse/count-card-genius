@@ -1,4 +1,5 @@
 import { useState, type FormEvent } from "react";
+import { Link } from "@tanstack/react-router";
 import { Logo } from "@/components/Logo";
 import { PlayingCard } from "@/components/PlayingCard";
 import { Button } from "@/components/ui/button";
@@ -106,7 +107,10 @@ export function Welcome() {
           </div>
         )}
         <p className="mt-5 text-center text-xs text-muted-foreground/70">
-          Tu progreso se guarda en este dispositivo.
+          Tu progreso se guarda en este dispositivo.{" "}
+          <Link to="/privacidad" className="underline underline-offset-2">
+            Privacidad
+          </Link>
         </p>
       </div>
     </main>
